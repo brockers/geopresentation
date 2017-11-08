@@ -33,7 +33,7 @@ function ProjectedOverlay(imageUrl, bounds, addZoom)
  this.ie = false ;
 }
 
-ProjectedOverlay.prototype = new GOverlay();
+ProjectedOverlay.prototype = new google.maps.OverlayView();
 
 ProjectedOverlay.prototype.initialize = function(map)
 {
