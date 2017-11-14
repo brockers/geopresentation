@@ -1,13 +1,13 @@
 function initMap() {
 	var pSlides = [
-		['slide1.jpg', 35.1966130, -97.4822960 ],
-		['slide2.jpg', 35.2349110, -97.3957860 ],
-		['slide3.jpg', 35.2346300, -97.5255620 ],
-		['slide4.jpg', 35.2297253, -97.3233108 ],
-		['slide5.jpg', 35.2563629, -97.4599533 ],
-		['slide6.jpg', 35.1992917, -97.4010734 ],
-		['slide7.jpg', 35.2018867, -97.4314575 ],
-		['slide8.jpg', 35.2104426, -97.4653606 ]
+		['images/slide1.jpg', 35.1966130, -97.4822960 ],
+		['images/slide2.jpg', 35.2349110, -97.3957860 ],
+		['images/slide3.jpg', 35.2346300, -97.5255620 ],
+		['images/slide4.jpg', 35.2297253, -97.3233108 ],
+		['images/slide5.jpg', 35.2563629, -97.4599533 ],
+		['images/slide6.jpg', 35.1992917, -97.4010734 ],
+		['images/slide7.jpg', 35.2018867, -97.4314575 ],
+		['images/slide8.jpg', 35.2104426, -97.4653606 ]
 	];
 
 	var swLatLng = {lat:pSlides[0][1], lng:pSlides[0][2]};
@@ -62,7 +62,7 @@ function initMap() {
 				new google.maps.LatLng(parseFloat(nlat - latofset - bgofset), parseFloat(nlng - lngofset - bgofset)),
 				new google.maps.LatLng(parseFloat(nlat + latofset + bgofset), parseFloat(nlng + lngofset + bgofset)) );
 
-			var bgOverlay = new ProjectedOverlay(bgBounds, "background.png", map); // adds bg image behind slides
+			var bgOverlay = new ProjectedOverlay(bgBounds, "images/background.png", map); // adds bg image behind slides
 			var slideOverlay = new google.maps.GroundOverlay( pSlides[row][0], imageBounds );
 			slideOverlay.setMap(map);
 			//var slideOverlay = new ProjectedOverlay(imageBounds, pSlides[row][0], map, {isClickable:true});
