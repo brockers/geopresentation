@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/brockers/geopresentation/issues"
   },
-  "homepage": "https://github.com/brockers/geopresentation#readme"
+  "homepage": "https://github.com/brockers/geopresentation#readme",
+  "dependencies": {
+    "d3": "^4.11.0"
+  }
 }
