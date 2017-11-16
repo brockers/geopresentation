@@ -52,6 +52,7 @@ GraphOverlay.prototype.onAdd = function(){
 	hGDim.h = 500 - hGDim.t - hGDim.b;
 	this.hGDim_ = hGDim;
 	console.log("hGDim",hGDim);
+	console.log(fData);
 
 	var proj = this.getProjection();
 
@@ -61,7 +62,7 @@ GraphOverlay.prototype.onAdd = function(){
 		//.attr("height", hGDim.h + hGDim.t + hGDim.b).append("g")
 		.attr("width", "100%")
 		.attr("height", "100%").append("g")
-		.attr("transform", "translate(" + hGDim.l + "," + hGDim.t + ")");
+		//.attr("transform", "translate(" + hGDim.l + "," + hGDim.t + ")");
 		//.attr("transform", "translate(" + proj.fromLatLngToContainerPixel(center).x + "," + proj.fromLatLngToContainerPixel(center).y + ")");
 
 	// create function for x-axis mapping
@@ -71,7 +72,12 @@ GraphOverlay.prototype.onAdd = function(){
 
 	// Add x-axis to the histogram svg.
 	hGsvg.append("g").attr("class", "x axis")
-		.attr("transform", "translate(0," + hGDim.h + ")")
+		//.attr("transform", "translate(0," + hGDim.h + ")")
+		.attr("transform", function(){
+			var x = proj.fromLatLngToContainerPixel(center).x;
+			var y = proj.fromLatLngToContainerPixel(center).y;
+			return "translate(" + x + "," + y + ")";
+		})
 		.call(d3.axisBottom(x));
 
 	// Create function for y-axis map.
@@ -82,8 +88,6 @@ GraphOverlay.prototype.onAdd = function(){
 	var bars = hGsvg.selectAll(".bar").data(fData).enter()
 			.append("g").attr("class", "bar");
 
-	console.log(fData);
-	
 	//create the rectangles.
 	bars.append("rect")
 		//.attr("x", function(d) { return x(d[0]); })
@@ -92,14 +96,15 @@ GraphOverlay.prototype.onAdd = function(){
 		})
 		.attr("x", (d,i) => {
 			var fromProj = proj.fromLatLngToContainerPixel(d[2]).x
-			console.log("X: original", x(d[0]), "fromProj", x(fromProj));
+			//console.log("X: original", x(d[0]), "fromProj", x(fromProj));
 			return fromProj + x(d[0]);
 		})
 		//.attr("y", function(d) { return y(d[1]); })
 		.attr("y", function(d) { 
 			var fromProj = proj.fromLatLngToContainerPixel(d[2]).y
-			console.log("Y: original", y(d[1]), "fromProj", y(fromProj));
-			return y(d[1]);
+			//console.log("Y: original", y(d[1]), "fromProj", y(fromProj));
+			return y(d[1]) + proj.fromLatLngToContainerPixel(d[2]).y - hGDim.h;
+			//return y(d[1]);
 		})
 		.attr("width", x.bandwidth())
 		.attr("height", function(d) { return hGDim.h - y(d[1]); })
@@ -107,8 +112,14 @@ GraphOverlay.prototype.onAdd = function(){
 		
 	//Create the frequency labels above the rectangles.
 	bars.append("text").text(function(d){ return d3.format(",")(d[1])})
-		.attr("x", function(d) { return x(d[0])+x.bandwidth()/2; })
-		.attr("y", function(d) { return y(d[1])-5; })
+		.attr("x", function(d) { 
+			return x(d[0]) + x.bandwidth()/2 + proj.fromLatLngToContainerPixel(d[2]).x
+			//return x(d[0])+x.bandwidth()/2 + 
+		})
+		.attr("y", function(d) { 
+			return y(d[1])-5 + proj.fromLatLngToContainerPixel(d[2]).y - hGDim.h;
+			//return y(d[1])-5; 
+		})
 		.attr("text-anchor", "middle");
 
 	this.map.addListener("center_changed", this.onPan.bind(this));
@@ -130,19 +141,37 @@ GraphOverlay.prototype.onPan = function(){
 	var y = d3.scaleLinear().range([hGDim.h, 0])
 			.domain([0, d3.max(fData, function(d) { return d[1]; })]);
 
-	d3.select("#dashboard").select("g")
-		.selectAll(".bar").select("rect")
-		.data(fData)
+	// Update x axis
+	d3.select("#dashboard").select("g").select(".x.axis")
+		.attr("transform", function(d){
+			var x = proj.fromLatLngToContainerPixel(self.bounds_.getCenter()).x;
+			var y = proj.fromLatLngToContainerPixel(self.bounds_.getCenter()).y;
+			return "translate(" + x + "," + y + ")";
+		});
+		//.attr("transform", "translate(0," + hGDim.h + ")")
+
+	var bars = d3.select("#dashboard").select("g")
+		.selectAll(".bar");
+	
+	bars.select("rect")
+		//.data(fData)
 		.attr("x", function(d,i,group){
 			return i * x.bandwidth() + proj.fromLatLngToContainerPixel(d[2]).x
 		})
 		.attr("y", function(d,i){
 			return y(d[1]) + proj.fromLatLngToContainerPixel(d[2]).y - hGDim.h;
+		});
+		//.attr("height", function(d,i){
+		//	//var fromProj = proj.fromLatLngToContainerPixel(d[2]).y
+		//	return hGDim.h - y(d[1]);
+		//});
+
+	bars.select("text")
+		.attr("x", function(d,i){
+			return x(d[0]) + x.bandwidth()/2 + proj.fromLatLngToContainerPixel(d[2]).x
 		})
-		.attr("height", function(d,i){
-			var fromProj = proj.fromLatLngToContainerPixel(d[2]).y
-			//return hGDim.h - y(d[1]);
-			return hGDim.h - y(d[1]);
+		.attr("y", function(d){
+			return y(d[1])-5 + proj.fromLatLngToContainerPixel(d[2]).y - hGDim.h;
 		});
 }
 
