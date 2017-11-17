@@ -61,8 +61,12 @@ function initMap() {
 
 		map = new google.maps.Map(document.getElementById("map"), myOptions);
 
-		//addImageSlides(map);
-		addDashboardGraph(map);
+		map.addListener("zoom_changed", function(){
+			console.log(map.getZoom());
+		});
+
+		addImageSlides(map);
+		//addDashboardGraph(map);
 	}
 
 	function addImageSlides(map){

@@ -33,12 +33,13 @@ window.initMap = function() {
 		center: new google.maps.LatLng(-34.397, 150.644),
 		zoom: 8,
 		disableDefaultUI: true,
-		backgroundColor: '#002732'
+		mapTypeId: google.maps.MapTypeId.SATELLITE,
+		//backgroundColor: '#002732'
 	  });
 	  var styles = mapStyles; // loaded from data/map-styles.js
 
-	  map.mapTypes.set('neutral-blue', new google.maps.StyledMapType(styles));
-	  map.setMapTypeId('neutral-blue');
+	  //map.mapTypes.set('neutral-blue', new google.maps.StyledMapType(styles));
+	  //map.setMapTypeId('neutral-blue');
 
 	  var overlay = new MyOverlay(map);
 	}

@@ -4,6 +4,13 @@ var barColor = "steelblue";
 var rectWidth = 50;
 var rectHeight = 50;
 var cirRad = 5;
+var chartWidth = 1200;
+var chartHeight = 750;
+var chartPadding = {
+	x:20,
+	y:30,
+};
+var chartFontSize = 20;
 
 function MyOverlay (map) {
 	this.map = map;
@@ -27,10 +34,11 @@ function MyOverlay (map) {
 MyOverlay.prototype = new google.maps.OverlayView();
 
 MyOverlay.prototype.onAdd = function () {
+	var self = this;
 	var mapDiv = this.map.getDiv();
 	this.rectTarget = this.map.getBounds().getCenter();
 	this.targetLatLng = this.map.getBounds().getCenter();
-	this.chartTarget = new google.maps.LatLng(-32.9029395, 150.4766723);
+	this.chartTarget = new google.maps.LatLng(35.4535404, -97.6020877);
 
 	var overlay = d3.select(this.getPanes().overlayLayer);
 	var rectLayer = overlay.append("div")
@@ -49,12 +57,20 @@ MyOverlay.prototype.onAdd = function () {
 	});
 
 	var chartData = this.data.map(function(d){return [d.State,d.total];});
-	this.buildHistogram(chartLayer, chartData);
+	this.buildHistogram(this.getProjection(), chartLayer, chartData);
+
+	d3.select("body").on("keyup", function(){
+		switch(d3.event.key){
+			case "1": self.map.setCenter(self.chartTarget); break;
+			case "2": self.map.setCenter(self.rectTarget); break;
+		}
+	});
 };
 
 MyOverlay.prototype.draw = function () {
 	this.drawRect();
 	this.drawCircle();
+	this.drawHistogram();
 }
 
 MyOverlay.prototype.onRemove = function () {
@@ -92,6 +108,25 @@ MyOverlay.prototype.drawCircle = function(){
 	var translate = "translate(" + (x-cirRad) + "," + (y-cirRad) + ")";
 
 	d3.select(this.getPanes().overlayLayer).select(".circles").select("svg")
+		.attr("transform", translate+scale);
+};
+
+MyOverlay.prototype.drawHistogram = function(){
+	// setup custom scaling
+	var zoomScale = d3.scaleQuantize()
+		.domain([8, 16])
+		.range([0.01, 0.02, 0.03, 0.05, 0.15, 0.35, 0.45, 0.6, 0.8]);
+
+	var proj = this.getProjection();
+	var x = proj.fromLatLngToDivPixel(this.chartTarget).x; 
+	var y = proj.fromLatLngToDivPixel(this.chartTarget).y;
+
+	var newScale = zoomScale(this.map.getZoom());
+	var scale = "scale(" + newScale + ")";
+	var translate = "translate(" + (x-chartWidth/2-chartPadding.x) + "," + (y-chartHeight/2-chartPadding.y) + ")";
+	console.log("zoom:", this.map.getZoom(), "|", scale);
+
+	d3.select(this.getPanes().overlayLayer).select(".charts").select("svg")
 		.attr("transform", translate+scale);
 };
 
@@ -134,16 +169,21 @@ MyOverlay.prototype.addCircle = function(proj, layer){
 			.attr('fill', "magenta");
 }
 
-MyOverlay.prototype.buildHistogram = function(layer, fData){
+MyOverlay.prototype.buildHistogram = function(proj, layer, fData){
 	var hG={},	  hGDim = {t: 60, r: 0, b: 30, l: 0};
-	hGDim.w = 500 - hGDim.l - hGDim.r, 
-	hGDim.h = 300 - hGDim.t - hGDim.b;
-		
+	hGDim.w = chartWidth - hGDim.l - hGDim.r, 
+	hGDim.h = chartHeight - hGDim.t - hGDim.b;
+
+	var x = proj.fromLatLngToDivPixel(this.chartTarget).x;
+	var y = proj.fromLatLngToDivPixel(this.chartTarget).y;
+	var chartTranslate = "translate(" + [x,y].join(",") + ")";
 	//create svg for histogram.
 	var hGsvg = layer.append("svg")
+		.style("padding", chartPadding.y + "px " + chartPadding.x + "px")
+		.style("background-color", "white")
 		.attr("width", hGDim.w + hGDim.l + hGDim.r)
-		.attr("height", hGDim.h + hGDim.t + hGDim.b).append("g")
-		.attr("transform", "translate(" + hGDim.l + "," + hGDim.t + ")");
+		.attr("height", hGDim.h + hGDim.t + hGDim.b)
+		.attr("transform", chartTranslate).append("g");
 
 	// create function for x-axis mapping.
 	var x = d3.scaleBand()
@@ -153,8 +193,8 @@ MyOverlay.prototype.buildHistogram = function(layer, fData){
 	// Add x-axis to the histogram svg.
 	hGsvg.append("g").attr("class", "x axis")
 		.attr("transform", "translate(0," + hGDim.h + ")")
-		.call(d3.axisBottom(x));
-		//.call(d3.svg.axis().scale(x).orient("bottom"));
+		.call(d3.axisBottom(x))
+		.attr("font-size", chartFontSize + "px");
 
 	// Create function for y-axis map.
 	var y = d3.scaleLinear().range([hGDim.h, 0])
@@ -178,6 +218,7 @@ MyOverlay.prototype.buildHistogram = function(layer, fData){
 	bars.append("text").text(function(d){ return d3.format(",")(d[1])})
 		.attr("x", function(d) { return x(d[0])+x.bandwidth()/2; })
 		.attr("y", function(d) { return y(d[1])-5; })
+		.attr("font-size", chartFontSize + "px")
 		.attr("text-anchor", "middle");
 	
 	//function mouseover(d){	// utility function to be called on mouseover.
