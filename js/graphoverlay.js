@@ -34,7 +34,8 @@ GraphOverlay.prototype.onAdd = function(){
 	var barColor = "steelblue";
 	function segColor(c){ return {low:"#807dba", mid:"#e08214", high:"#41ab5d"}[c]; }
 
-	var center = this.map_.getBounds().getCenter();
+	//var center = this.map_.getBounds().getCenter();
+	var center = this.bounds_.getCenter();
 
 	// compute total for each state
 	this.data_.forEach(function(d){
@@ -122,8 +123,30 @@ GraphOverlay.prototype.onAdd = function(){
 		})
 		.attr("text-anchor", "middle");
 
+	var zoom = d3.zoom()
+		.scaleExtent([1,8])
+		.on("zoom", zoomed);
+	function zoomed(){
+		console.log("zoomed");
+	}
+	//hGsvg.call(zoom).call(zoom.event);
+	d3.select("#dashboard").call(d3.zoom().on("zoom",zoomed));
+
 	this.map.addListener("center_changed", this.onPan.bind(this));
+	this.map.addListener("zoom_changed", this.onZoom.bind(this));
 	document.body.appendChild(this.svg_);
+}
+
+GraphOverlay.prototype.onZoom = function(){
+	var zoomScale = d3.scaleLinear().range([0.1, 1]).domain([0, 20]);
+	console.log("currentZoom", this.map_.getZoom());
+	console.log("zoom(15) => scale:", zoomScale(15));
+	console.log("zoom(10) => scale:", zoomScale(10));
+	console.log("zoom(5) => scale:", zoomScale(5));
+	console.log("zoom(1) => scale:", zoomScale(1));
+
+	//d3.select("#dashboard").select("g")
+	//	.attr("transform", "scale(" + zoomScale(this.map_.getZoom()) + ")");
 }
 
 GraphOverlay.prototype.onPan = function(){
@@ -137,6 +160,7 @@ GraphOverlay.prototype.onPan = function(){
 	var x = d3.scaleBand()
 		.domain(fData.map(function(d) { return d[0]; }))
 		.rangeRound([0, hGDim.w], 0.1);
+
 	// Create function for y-axis map.
 	var y = d3.scaleLinear().range([hGDim.h, 0])
 			.domain([0, d3.max(fData, function(d) { return d[1]; })]);
