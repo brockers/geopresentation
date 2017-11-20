@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>D3 Dynamic Data Charts</title>
+<style>
+html, body #map {
+  width:100%;
+  height:100%;
+  margin: 0;
+  padding: 0;
+}
+
+.charts, .charts svg, .rect-container, .rect-container svg{
+	position:absolute;
+}
+
+.rect-container svg{
+	width:50px;
+	height:50px;
+}
+
+.bar{
+	fill:steelblue;
+}
+</style>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<body>
+<!-- hide map stuff for now
+<div id="map" style="position:absolute; top:0; left:0; width:100%; height:100%"></div>
+-->
+<div id="content">
+	<div id="chart1"></div>
+	<button onclick="stopInterval()">Stop</button>
+</div>
+<script>
+	// should only be called when gmaps is loaded
+	window.initMap = function() {
+		function initialize(){
+		  var el = document.querySelector('#map');
+		  var google = window.google;
+
+
+		  var map = new google.maps.Map(el, {
+			center: new google.maps.LatLng(-34.397, 150.644),
+			zoom: 8,
+			disableDefaultUI: true,
+			mapTypeId: google.maps.MapTypeId.SATELLITE,
+			//backgroundColor: '#002732'
+		  });
+		  var styles = mapStyles; // loaded from data/map-styles.js
+
+		  //map.mapTypes.set('neutral-blue', new google.maps.StyledMapType(styles));
+		  //map.setMapTypeId('neutral-blue');
+
+		  var overlay = new MyOverlay(map);
+		}
+		window.onload = initialize;
+	};
+
+</script>
+<script src="js/charting.js"></script>
+<script src="data/headlines.js"></script>
+<script>
+	var data = HEADLINES; // from data/headlines
+	var lastData;
+	var margins = {bottom:25};
+	var padding = {top:25};
+
+	// build chart
+	var chart1 = new BarChart("#chart1", {height:400, margins:margins, padding:padding});
+
+	chart1.draw(data);
+
+	var handle = setInterval(function(){
+		var newData = data.map(function(d,i){
+			var newValue = d.value + Math.floor((Math.random()*10 -5));
+			return {
+				key:d.key,
+				value:newValue
+			};
+		});
+
+		lastData = newData.sort(function(a, b){
+			return b.value - a.value;
+		});
+		chart1.draw(lastData);
+	}, 500);
+
+	function stopInterval(){
+		clearInterval(handle);
+		console.log(lastData);
+	}
+</script>
+<!--
+<script src="../data/map-styles.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyA7EvP4Df7Evm0rLWv8IjkJ4beBywUe-PQ&callback=initMap"></script>
+<script src="third.js"></script>
+-->
+</body>
