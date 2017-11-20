@@ -41,9 +41,10 @@ MyOverlay.prototype.onAdd = function () {
 	this.chartTarget = new google.maps.LatLng(35.4535404, -97.6020877);
 
 	var overlay = d3.select(this.getPanes().overlayLayer);
+	var mouseLayer = d3.select(this.getPanes().overlayMouseTarget);
 	var rectLayer = overlay.append("div")
 		.attr("class", "rect-container");
-	var chartLayer = overlay.append("div")
+	var chartLayer = mouseLayer.append("div")
 		.attr("class", "charts");
 	var circleLayer = overlay.append("div")
 		.attr("class", "circles");
@@ -126,7 +127,7 @@ MyOverlay.prototype.drawHistogram = function(){
 	var translate = "translate(" + (x-chartWidth/2-chartPadding.x) + "," + (y-chartHeight/2-chartPadding.y) + ")";
 	console.log("zoom:", this.map.getZoom(), "|", scale);
 
-	d3.select(this.getPanes().overlayLayer).select(".charts").select("svg")
+	d3.select(this.getPanes().overlayMouseTarget).select(".charts").select("svg")
 		.attr("transform", translate+scale);
 };
 
@@ -221,21 +222,23 @@ MyOverlay.prototype.buildHistogram = function(proj, layer, fData){
 		.attr("font-size", chartFontSize + "px")
 		.attr("text-anchor", "middle");
 	
-	//function mouseover(d){	// utility function to be called on mouseover.
-	//	// filter for selected state.
-	//	var st = fData.filter(function(s){ return s.State == d[0];})[0],
-	//		nD = d3.keys(st.freq).map(function(s){ return {type:s, freq:st.freq[s]};});
-	//	   
-	//	// call update functions of pie-chart and legend.	 
-	//	pC.update(nD);
-	//	leg.update(nD);
-	//}
+	function mouseover(d){	// utility function to be called on mouseover.
+		console.log("mouseover");
+		// filter for selected state.
+		var st = fData.filter(function(s){ return s.State == d[0];})[0],
+			nD = d3.keys(st.freq).map(function(s){ return {type:s, freq:st.freq[s]};});
+		   
+		// call update functions of pie-chart and legend.	 
+		//pC.update(nD);
+		//leg.update(nD);
+	}
 	
-	//function mouseout(d){	 // utility function to be called on mouseout.
-	//	// reset the pie-chart and legend.	  
-	//	pC.update(tF);
-	//	leg.update(tF);
-	//}
+	function mouseout(d){	 // utility function to be called on mouseout.
+		console.log("mouseout");
+		// reset the pie-chart and legend.	  
+		//pC.update(tF);
+		//leg.update(tF);
+	}
 	
 	// create function to update the bars. This will be used by pie-chart.
 	//hG.update = function(nD, color){
