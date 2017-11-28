@@ -29,62 +29,91 @@ html, body #map {
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <body>
 <div id="map" style="position:absolute; top:0; left:0; width:100%; height:100%"></div>
-<div id="content">
-	<div id="chart1"></div>
-	<button onclick="stopInterval()">Stop</button>
-</div>
 <script>
 	var dynamicExample = false;
 	if(!dynamicExample){
 		// should only be called when gmaps is loaded
 		window.initMap = function() {
 			function initialize(){
-			  var el = document.querySelector('#map');
-			  var google = window.google;
+				var el = document.querySelector('#map');
+				var google = window.google;
 
-
-			  var center = new google.maps.LatLng(35.4535404, -97.6020877);
-			  var map = new google.maps.Map(el, {
-				center: center,
-				zoom: 8,
-				disableDefaultUI: true,
-				mapTypeId: google.maps.MapTypeId.SATELLITE,
-				//backgroundColor: '#002732'
-			  });
-			  //var styles = mapStyles; // loaded from data/map-styles.js
-
-			  //map.mapTypes.set('neutral-blue', new google.maps.StyledMapType(styles));
-			  //map.setMapTypeId('neutral-blue');
-
+				var center = new google.maps.LatLng(35.4535404, -97.6020877);
+				var map = new google.maps.Map(el, {
+					center: center,
+					zoom: 8,
+					disableDefaultUI: true,
+					mapTypeId: google.maps.MapTypeId.SATELLITE,
+				});
 
 				var data = HEADLINES; // from data/headlines
 				var lastData;
 				var margins = {bottom:25};
 				var padding = {top:45, right:30, bottom:30, left:30};
+				var chartOptions = {width:1200, height:750, margins:margins, padding:padding};
 
-				var chart = new MapBarChart(center, data, {width:1200, height:750, margins:margins, padding:padding});
-				console.log(chart);
-
+				var chart = new MapBarChart(
+					center, 
+					HEADLINES, // from data/headlines
+					chartOptions
+				);
 				var overlay = new MyOverlay(map, chart);
 
-				var handle = setInterval(function(){
-					var newData = data.map(function(d,i){
-						var newValue = d.value + Math.floor((Math.random()*10 -5));
-						return {
-							key:d.key,
-							value:newValue
-						};
-					});
+				var freqData = FREQUENCY_DATA.map( d => ({
+					key:d.key,
+					value:d.freq.low + d.freq.mid + d.freq.high
+				}) );
+				var chart2 = new MapBarChart(
+					new google.maps.LatLng(35.532813, -97.952580),
+					freqData, // from data/frequency
+					chartOptions
+				);
+				var overlay2 = new MyOverlay(map, chart2);
 
-					lastData = newData.sort(function(a, b){
-						return b.value - a.value;
-					});
-					chart.data(lastData).draw();
+				var chart3 = new MapBarChart(
+					new google.maps.LatLng(35.544596, -97.529507),
+					AGE_POPULATION_DATA, // from data/frequency
+					chartOptions
+				);
+				var overlay3 = new MyOverlay(map, chart3);
+
+
+				var randomHandle = setInterval(function(){
+					function randomizeValue(delta){
+						function randomizer(d, i){
+							var min = Math.ceil(-delta);
+							var max = Math.min(delta);
+							return {
+								key:d.key,
+								value:d.value + Math.floor((Math.random() * (max-min) + min))
+							};
+						}
+						return randomizer;
+					}
+					function sortDescendingValues(a, b){ return b.value - a.value; }
+
+					var chart1Data = chart.data().map(randomizeValue(50)).sort(sortDescendingValues);
+					chart.data(chart1Data)
+						.draw();
+
+					chart2.data(chart2.data().map(randomizeValue(250)))
+						.draw();
+				}, 1000);
+
+
+				var currentOverlay = 0;
+				var totalOverlays = 3;
+				var swapInterval = setInterval(function(){
+					// TODO swap between overlays
+					
 				}, 5000);
+
 
 				d3.select("body").on("keyup", function(){
 					switch(d3.event.key){
-						case "c": map.setCenter(center); map.setZoom(16); break; // center map on overlay
+						case "1": overlay.focus(); break;
+						case "2": overlay2.focus(); break;
+						case "3": overlay3.focus(); break;
 					}
 				});
 
@@ -98,42 +127,6 @@ html, body #map {
 <script src="js/charting.js"></script>
 <script src="js/chartoverlay.js"></script>
 <script src="data/headlines.js"></script>
-<script>
-
-	if(dynamicExample){
-		var data = HEADLINES; // from data/headlines
-		var lastData;
-		var margins = {bottom:25};
-		var padding = {top:25};
-
-		// build chart
-		var chart1 = new BarChart("#chart1", {height:400, margins:margins, padding:padding});
-
-		chart1.draw(data);
-
-		var handle = setInterval(function(){
-			var newData = data.map(function(d,i){
-				var newValue = d.value + Math.floor((Math.random()*10 -5));
-				return {
-					key:d.key,
-					value:newValue
-				};
-			});
-
-			lastData = newData.sort(function(a, b){
-				return b.value - a.value;
-			});
-			chart1.draw(lastData);
-		}, 500);
-
-		function stopInterval(){
-			clearInterval(handle);
-			console.log(lastData);
-		}
-	}
-</script>
-<!--
-<script src="../data/map-styles.js"></script>
-<script src="third.js"></script>
--->
+<script src="data/frequency.js"></script>
+<script src="data/pop-by-age.js"></script>
 </body>

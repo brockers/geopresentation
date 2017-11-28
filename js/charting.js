@@ -5,6 +5,12 @@ var defaults = {
 	margins: {top:0, right:0, bottom:0, left:0},
 };
 
+function clamp(value, min, max){
+	if(value>max){ return max; }
+	if(value<min){ return min; }
+	return value;
+}
+
 function BarChart(data, options){
 	options = options || {};
 	var width = options.width || defaults.width;
@@ -55,6 +61,28 @@ function BarChart(data, options){
 	this.svg = null;
 }
 
+// Computes the y position for a bar where 0 <= y <= chartHeight
+BarChart.prototype._computeBarY = function(d){
+	var computed = this.height.chart - this.scales.y(d.value);
+	return clamp(computed, 0, this.height.chart);
+}
+
+// Computes bar height where 0 <= barHeight <= chartHeight
+BarChart.prototype._computeBarHeight = function(d){
+	var computed = this.scales.y(d.value);
+	return clamp(computed, 0, this.height.chart);
+}
+
+		//.attr("x", function(d) { return x(d.key)+x.bandwidth()/2; })
+		//.attr("y", function(d) { return Math.min(self.height.chart-5, (self.height.chart - y(d.value)-5)); })
+BarChart.prototype._computeBarLabelX = function(d){
+
+}
+
+BarChart.prototype._computeBarLabelY = function(d){
+
+}
+
 BarChart.prototype.attachChart = function(selector){
 	selector.selectAll("svg").remove();
 	// Create svg element
@@ -96,15 +124,15 @@ BarChart.prototype.draw = function(){
 	newBar.insert("rect")
 		.attr("class", "bar")
 		.attr("x", function(d){ return x(d.key); })
-		.attr("y", function(d){ return self.height.chart - y(d.value); })
-		.attr("height", function(d){ return y(d.value); })
+		.attr("y", function(d){ return self._computeBarY(d); })
+		.attr("height", function(d){ return self._computeBarHeight(d); })
 		.attr("width", x.bandwidth());
 
 	// Add value labels
 	newBar.append("text")
 		.attr("class","label")
 		.attr("x", function(d) { return x(d.key)+x.bandwidth()/2; })
-		.attr("y", function(d) { return self.height.chart - y(d.value)-5; })
+		.attr("y", function(d) { return Math.min(self.height.chart-5, (self.height.chart - y(d.value)-5)); })
 		.attr("font-size", "20px")
 		.attr("text-anchor", "middle")
 		.text(function(d){ return d.value; });
@@ -117,14 +145,14 @@ BarChart.prototype.draw = function(){
 	// Update bar heights
 	bars.select(".bar").transition()
 		.duration(300)
-		.attr("y", function(d){ return self.height.chart - y(d.value); })
-		.attr("height", function(d){ return y(d.value); })
+		.attr("y", function(d){ return self._computeBarY(d); })
+		.attr("height", function(d){ return self._computeBarHeight(d); })
 
 	// Update data labels
 	var labelFormat = d3.format(",d");
 	bars.select(".label").transition()
 		.duration(300)
-		.attr("y", function(d) { return self.height.chart - y(d.value)-5; })
+		.attr("y", function(d) { return Math.min(self.height.chart-5, (self.height.chart - y(d.value)-5)); })
 		.tween("text", function(d){
 			var el = d3.select(this);
 			var i = d3.interpolate(+this.textContent.replace(/\,/g,""), +d.value);
@@ -193,4 +221,8 @@ MapBarChart.prototype.update = function(proj, mapZoom){
 
 MapBarChart.prototype.transform = function(translate, scale){
 	this.svg.attr("transform", translate+scale);
+};
+
+MapBarChart.prototype.focus = function(){
+	
 };
