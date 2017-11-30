@@ -29,103 +29,11 @@ html, body #map {
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <body>
 <div id="map" style="position:absolute; top:0; left:0; width:100%; height:100%"></div>
-<script>
-	var dynamicExample = false;
-	if(!dynamicExample){
-		// should only be called when gmaps is loaded
-		window.initMap = function() {
-			function initialize(){
-				var el = document.querySelector('#map');
-				var google = window.google;
-
-				var center = new google.maps.LatLng(35.4535404, -97.6020877);
-				var map = new google.maps.Map(el, {
-					center: center,
-					zoom: 8,
-					disableDefaultUI: true,
-					mapTypeId: google.maps.MapTypeId.SATELLITE,
-				});
-
-				var data = HEADLINES; // from data/headlines
-				var lastData;
-				var margins = {bottom:25};
-				var padding = {top:45, right:30, bottom:30, left:30};
-				var chartOptions = {width:1200, height:750, margins:margins, padding:padding};
-
-				var chart = new MapBarChart(
-					center, 
-					HEADLINES, // from data/headlines
-					chartOptions
-				);
-				var overlay = new MyOverlay(map, chart);
-
-				var freqData = FREQUENCY_DATA.map( d => ({
-					key:d.key,
-					value:d.freq.low + d.freq.mid + d.freq.high
-				}) );
-				var chart2 = new MapBarChart(
-					new google.maps.LatLng(35.532813, -97.952580),
-					freqData, // from data/frequency
-					chartOptions
-				);
-				var overlay2 = new MyOverlay(map, chart2);
-
-				var chart3 = new MapBarChart(
-					new google.maps.LatLng(35.544596, -97.529507),
-					AGE_POPULATION_DATA, // from data/frequency
-					chartOptions
-				);
-				var overlay3 = new MyOverlay(map, chart3);
-
-
-				var randomHandle = setInterval(function(){
-					function randomizeValue(delta){
-						function randomizer(d, i){
-							var min = Math.ceil(-delta);
-							var max = Math.min(delta);
-							return {
-								key:d.key,
-								value:d.value + Math.floor((Math.random() * (max-min) + min))
-							};
-						}
-						return randomizer;
-					}
-					function sortDescendingValues(a, b){ return b.value - a.value; }
-
-					var chart1Data = chart.data().map(randomizeValue(50)).sort(sortDescendingValues);
-					chart.data(chart1Data)
-						.draw();
-
-					chart2.data(chart2.data().map(randomizeValue(250)))
-						.draw();
-				}, 1000);
-
-
-				var currentOverlay = 0;
-				var totalOverlays = 3;
-				var swapInterval = setInterval(function(){
-					// TODO swap between overlays
-					
-				}, 5000);
-
-
-				d3.select("body").on("keyup", function(){
-					switch(d3.event.key){
-						case "1": overlay.focus(); break;
-						case "2": overlay2.focus(); break;
-						case "3": overlay3.focus(); break;
-					}
-				});
-
-			}
-			window.onload = initialize;
-		};
-	}
-
-</script>
-<script src="https://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyA7EvP4Df7Evm0rLWv8IjkJ4beBywUe-PQ&callback=initMap"></script>
+<script src="index.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyA7EvP4Df7Evm0rLWv8IjkJ4beBywUe-PQ&v=3.exp&use_slippy=true&callback=initMap"></script>
 <script src="js/charting.js"></script>
 <script src="js/chartoverlay.js"></script>
+<script src="js/easing.js"></script>
 <script src="data/headlines.js"></script>
 <script src="data/frequency.js"></script>
 <script src="data/pop-by-age.js"></script>

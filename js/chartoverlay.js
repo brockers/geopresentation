@@ -30,6 +30,6 @@ MyOverlay.prototype.onRemove = function () {
 };
 
 MyOverlay.prototype.focus = function(){
-	this.map.setCenter(this.chart.latLng());
-	this.map.setZoom(16);
+	this.map.panTo(this.chart.latLng());
+	this.map.setZoom(12);
 };

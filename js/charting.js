@@ -73,13 +73,14 @@ BarChart.prototype._computeBarHeight = function(d){
 	return clamp(computed, 0, this.height.chart);
 }
 
-		//.attr("x", function(d) { return x(d.key)+x.bandwidth()/2; })
-		//.attr("y", function(d) { return Math.min(self.height.chart-5, (self.height.chart - y(d.value)-5)); })
 BarChart.prototype._computeBarLabelX = function(d){
-
+	var x = this.scales.x;
+	return x(d.key)+x.bandwidth()/2;
 }
 
 BarChart.prototype._computeBarLabelY = function(d){
+	var computed = this.height.chart - this.scales.y(d.value)-5;
+	return clamp(computed, -5, this.height.chart-5);
 
 }
 
@@ -94,6 +95,16 @@ BarChart.prototype.attachChart = function(selector){
 	svg.append("g")
 		.attr("transform", "translate(" + this.margins.left + "," + this.margins.top + ")");
 	this.svg = svg;
+
+	var zoom = d3.zoom()
+		.scaleExtent([1,8])
+		.on("zoom", zoomed);
+
+	function zoomed(){
+		console.log("k",d3.event.transform.k);
+	}
+
+	//this.svg.call(zoom);
 }
 
 BarChart.prototype.draw = function(){
@@ -131,8 +142,8 @@ BarChart.prototype.draw = function(){
 	// Add value labels
 	newBar.append("text")
 		.attr("class","label")
-		.attr("x", function(d) { return x(d.key)+x.bandwidth()/2; })
-		.attr("y", function(d) { return Math.min(self.height.chart-5, (self.height.chart - y(d.value)-5)); })
+		.attr("x", function(d) { return self._computeBarLabelX(d); })
+		.attr("y", function(d) { return self._computeBarLabelY(d); })
 		.attr("font-size", "20px")
 		.attr("text-anchor", "middle")
 		.text(function(d){ return d.value; });
@@ -152,7 +163,7 @@ BarChart.prototype.draw = function(){
 	var labelFormat = d3.format(",d");
 	bars.select(".label").transition()
 		.duration(300)
-		.attr("y", function(d) { return Math.min(self.height.chart-5, (self.height.chart - y(d.value)-5)); })
+		.attr("y", function(d) { return self._computeBarLabelY(d); })
 		.tween("text", function(d){
 			var el = d3.select(this);
 			var i = d3.interpolate(+this.textContent.replace(/\,/g,""), +d.value);
@@ -198,6 +209,19 @@ function MapBarChart(latLng, data, options){
 		_zoomScale = value;
 		return this;
 	};
+
+	var _translate = {x:0,y:0};
+	this.translate = function(xVal, yVal){
+		if(!arguments.length) return _translate;
+		_translate.x = xVal;
+		_translate.y = yVal;
+	};
+
+	var _scale = 0.01;
+	this.scale = function(value){
+		if(!arguments.length) return _scale;
+		_scale = value;
+	};
 }
 
 MapBarChart.prototype.update = function(proj, mapZoom){
@@ -213,14 +237,44 @@ MapBarChart.prototype.update = function(proj, mapZoom){
 	var zoom = this.zoomScale();
 
 	var newScale = zoom(mapZoom);
-	var scale = "scale(" + newScale + ")";
+	//console.log("newScale", newScale);
+	//var scale = "scale(" + newScale + ")";
 	var translate = "translate(" + (x-chartWidth/2-chartPadding.x/2) + "," + (y-chartHeight/2-chartPadding.y/2) + ")";
+	var linScale = d3.scaleLinear()
+		.domain([8, 16])
+		.range([0.01, 1]);
 
-	this.transform(translate, scale);
+	var scaledVal = linScale(mapZoom)
+	//console.log("linScale", scaledVal, "eased", d3.easeCubicOut(scaledVal));
+
+	this.scale(newScale);
+
+	this.translate((x-chartWidth/2-chartPadding.x/2), (y-chartHeight/2-chartPadding.y/2));
+	this.transform();
 }
 
-MapBarChart.prototype.transform = function(translate, scale){
-	this.svg.attr("transform", translate+scale);
+MapBarChart.prototype.transform = function(){
+	var translate = "translate(" + this.translate().x + "," + this.translate().y + ")";
+	var scale = "scale(" + this.scale() + ")";
+	//this.svg.attr("transform", translate+scale);
+	
+	var transform = this.svg.attr("transform") || "";
+	var oldTranslate = transform.split("scale")[0] || "";
+	var oldScale = transform.split("scale")[1];
+	if(oldScale===undefined){
+		oldScale = "scale(1)";
+	}else{
+		oldScale = "scale" + oldScale;
+	}
+	//console.log(transform);
+
+	this.svg.transition()
+		.attr("transform", translate+scale)
+		.duration(250)
+		.attrTween("transform", function(d){
+			//console.log("interpolating between", translate+oldScale, "and", (translate+scale));
+			return d3.interpolateString(translate+oldScale, translate+scale);
+		});
 };
 
 MapBarChart.prototype.focus = function(){
