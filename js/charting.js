@@ -96,6 +96,9 @@ BarChart.prototype.attachChart = function(selector){
 		.attr("transform", "translate(" + this.margins.left + "," + this.margins.top + ")");
 	this.svg = svg;
 
+	//TODO add x and y chart labels if available
+	// eg Number of people per capita
+
 	var zoom = d3.zoom()
 		.scaleExtent([1,8])
 		.on("zoom", zoomed);
@@ -103,8 +106,6 @@ BarChart.prototype.attachChart = function(selector){
 	function zoomed(){
 		console.log("k",d3.event.transform.k);
 	}
-
-	//this.svg.call(zoom);
 }
 
 BarChart.prototype.draw = function(){
@@ -185,6 +186,16 @@ BarChart.prototype.draw = function(){
 		.attr("transform", "translate(0," + self.height.chart + ")")
 		.call(d3.axisBottom(x))
 		.attr("font-size", "18px");
+
+	var yInvert = y.copy()
+		.domain(y.domain().reverse())
+		.range(y.range());
+	// Add y-axis to the chart
+	this.svg.select("g.y.axis").remove(); // remove old axis if it exists
+	this.svg.append("g").attr("class", "y axis")
+		.attr("transform", "translate(" + self.margins.left + ",0)")
+		.call(d3.axisLeft(yInvert))
+		.attr("font-size", "18px");
 }
 
 
@@ -234,20 +245,9 @@ MapBarChart.prototype.update = function(proj, mapZoom){
 
 	var x = proj.fromLatLngToDivPixel(this.latLng()).x;
 	var y = proj.fromLatLngToDivPixel(this.latLng()).y;
-	var zoom = this.zoomScale();
 
-	var newScale = zoom(mapZoom);
-	//console.log("newScale", newScale);
-	//var scale = "scale(" + newScale + ")";
-	var translate = "translate(" + (x-chartWidth/2-chartPadding.x/2) + "," + (y-chartHeight/2-chartPadding.y/2) + ")";
-	var linScale = d3.scaleLinear()
-		.domain([8, 16])
-		.range([0.01, 1]);
-
-	var scaledVal = linScale(mapZoom)
-	//console.log("linScale", scaledVal, "eased", d3.easeCubicOut(scaledVal));
-
-	this.scale(newScale);
+	var zoomFn = this.zoomScale();
+	this.scale(zoomFn(mapZoom));
 
 	this.translate((x-chartWidth/2-chartPadding.x/2), (y-chartHeight/2-chartPadding.y/2));
 	this.transform();
@@ -266,13 +266,11 @@ MapBarChart.prototype.transform = function(){
 	}else{
 		oldScale = "scale" + oldScale;
 	}
-	//console.log(transform);
 
 	this.svg.transition()
 		.attr("transform", translate+scale)
 		.duration(250)
 		.attrTween("transform", function(d){
-			//console.log("interpolating between", translate+oldScale, "and", (translate+scale));
 			return d3.interpolateString(translate+oldScale, translate+scale);
 		});
 };

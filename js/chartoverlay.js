@@ -11,7 +11,6 @@ MyOverlay.prototype.onAdd = function () {
 	this.targetLatLng = this.map.getBounds().getCenter();
 	this.chartTarget = new google.maps.LatLng(35.4535404, -97.6020877);
 
-	var overlay = d3.select(this.getPanes().overlayLayer);
 	var mouseLayer = d3.select(this.getPanes().overlayMouseTarget);
 	var chartLayer = mouseLayer.append("div")
 		.attr("class", "charts");
@@ -30,6 +29,6 @@ MyOverlay.prototype.onRemove = function () {
 };
 
 MyOverlay.prototype.focus = function(){
-	this.map.panTo(this.chart.latLng());
 	this.map.setZoom(12);
+	this.map.panTo(this.chart.latLng());
 };

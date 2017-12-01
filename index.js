@@ -9,14 +9,12 @@ window.initMap = function() {
 			center: center,
 			zoom: 8,
 			disableDefaultUI: true,
-			noClear: true,
 			mapTypeId: google.maps.MapTypeId.SATELLITE,
 		});
 
 		var data = HEADLINES; // from data/headlines
-		var lastData;
 		var margins = {bottom:25};
-		var padding = {top:45, right:30, bottom:30, left:30};
+		var padding = {top:45, right:30, bottom:30, left:100};
 		var chartOptions = {width:1200, height:750, margins:margins, padding:padding};
 
 		var overlays = [];
@@ -69,19 +67,10 @@ window.initMap = function() {
 				var values = overlay.chart.data().map(randomizeValue(delta));
 				overlay.chart.data(values).draw();
 			});
-		}, 1000);
+		}, 10000);
 
 
-		var currentOverlay = 0;
-		var swapInterval = setInterval(function(){
-			overlays[currentOverlay++].focus();
-			if(currentOverlay>2){ currentOverlay=0; }
-		}, 5000);
-
-
-		var panEasingAnim = EasingAnimator.makeFromCallback(function(latLng){
-			map.setCenter(latLng);
-		}, {duration:1000});
+		var cycleInterval = zoomPanCycle(map, overlays);
 
 		d3.select("body").on("keyup", function(){
 			switch(d3.event.key){
@@ -90,41 +79,15 @@ window.initMap = function() {
 				case "3": overlays[(+d3.event.key)-1].focus(); break;
 				case "ArrowRight": break;
 				case "ArrowLeft": break;
-				case "m": clearInterval(swapInterval); break;
+				case "Escape":
+				case "c": 
+					clearInterval(cycleInterval.handle);
+					cycleInterval = undefined;
+					break;
 				case "t": // currently smoothly pans and zooms 
-					var next = currentOverlay+1;
-					next = (next>2) ? 0 : next;
-					var theOverlay = overlays[next];
-
-					function smoothPan(){
-						var point = map.getCenter();
-						panEasingAnim.easeProp({
-							lat: point.lat(),
-							lng: point.lng(),
-						}, {
-							lat: theOverlay.chart.latLng().lat(),
-							lng: theOverlay.chart.latLng().lng(),
-						}, function(){
-							// currently depending on gmaps 3.31 beta renderer 
-							// for smooth zoom animations
-							map.setZoom(16);								
-						});
+					if(cycleInterval===undefined){
+						cycleInterval = zoomPanCycle(map, overlays);
 					}
-
-					function smoothZoomOut(){
-						// currently depending on gmaps 3.31 beta renderer 
-						// for smooth zoom animations
-						map.setZoom(12);
-						var handle = setInterval(function(){
-							if(map.getZoom()===12){
-								clearInterval(handle);
-								smoothPan();
-							}
-						}, 250); // interval same as chart svg transform transition duration
-					}
-
-					smoothZoomOut();
-					currentOverlay = next;
 					break;
 			}
 		});
@@ -132,3 +95,67 @@ window.initMap = function() {
 	}
 	window.onload = initialize;
 };
+
+// TODO Convert to class so we can track the timeout handle in a cleaner manner
+function zoomPanCycle(map, overlays, options){
+	options = options || {};
+	var wait = options.wait || 5000;
+	var index = options.start || 0;
+	if(index>=overlays.length){ index = overlays.length - 1; }
+
+	var panEasingAnim = EasingAnimator.makeFromCallback(function(latLng){
+		map.setCenter(latLng);
+	}, {duration:1000});
+
+	function smoothPan(overlay){
+		var point = map.getCenter();
+		panEasingAnim.easeProp({
+			lat: point.lat(),
+			lng: point.lng(),
+		}, {
+			lat: overlay.chart.latLng().lat(),
+			lng: overlay.chart.latLng().lng(),
+		}, function(){
+			// currently depending on gmaps 3.31 beta renderer 
+			// for smooth zoom animations
+			map.setZoom(16);								
+		});
+	}
+
+	function smoothZoomOut(overlay){
+		// currently depending on gmaps 3.31 beta renderer 
+		// for smooth zoom animations
+		map.setZoom(12);
+		var handle = setInterval(function(){
+			if(map.getZoom()===12){
+				clearInterval(handle);
+				smoothPan(overlay);
+			}
+		}, 250); // interval same as chart svg transform transition duration
+	}
+
+
+	//var handle = setInterval(function(){
+	//	var next = index+1;
+	//	if(next>=overlays.length){ next = 0; }
+	//	var overlay = overlays[next];
+
+	//	smoothZoomOut(overlay);
+	//	index = next;
+	//}, wait);
+	var self = this;
+	// Essentially the same as setInterval(fn, wait) but this
+	// invokes immediately then is invoked as setInterval would
+	(function interval(){
+		var next = index+1;
+		if(next>=overlays.length){ next = 0; }
+		var overlay = overlays[next];
+		smoothZoomOut(overlay);
+		index = next;
+
+		self.handle = setTimeout(interval, wait);
+		return self.handle;
+		//return setTimeout(interval, wait);
+	})();
+	return this;
+}
